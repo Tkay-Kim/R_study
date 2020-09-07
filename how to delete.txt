@@ -1,0 +1,2 @@
+git rm --cached [Filename] #remote에선 삭제  local은 유지
+git rm [Filename] 
