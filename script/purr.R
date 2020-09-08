@@ -1,11 +1,14 @@
 
 # Introduction to "purr" --------------------------------------------------
 # 출처:https://kuduz.tistory.com/1199?category=834629
-install.packages("tidyverse")
+# install.packages("tidyverse")
+rm(list=ls())
 library("tidyverse")
 
-kbo <- read.csv("kbo.csv") %>% as_tibble() #한글자료는 read.csv로만 읽으면 깨짐현상이 나타나 as_tibble()해줘야한다.
+kbo <- read.csv("kbo.csv")
+kbo <- read.csv("kbo.csv") %>% as_tibble() # 한글자료는 read.csv로만 읽으면 깨짐현상이 나타나 as_tibble()해줘야한다->update되서 안해도 되는 것 같다.
 str(kbo)
+
 
 lm(타석당득점~타율, kbo) %>%
   summary() %>% 
@@ -14,33 +17,33 @@ lm(타석당득점~타율, kbo) %>%
 
 lm(타석당득점~출루율, kbo) %>%
   summary() %>% 
-  .$r.squared        # 앞에 .을 써서 $를 인식 시킨다.
-
+  .$r.squared        
 
 lm(타석당득점~장타력, kbo) %>%
   summary() %>% 
-  .$r.squared        # 앞에 .을 써서 $를 인식 시킨다.
+  .$r.squared        
 
 
 lm(타석당득점~OPS, kbo) %>%
   summary() %>% 
-  .$r.squared        # 앞에 .을 써서 $를 인식 시킨다.
+  .$r.squared        
 
-#위와 같은 상황은 코드화 해보자
+#위와 같은 상황은 코드화 해보자!
 
 # 반복을 반복 ------------------------------------------------------------------
 
 
-a <- 1:5
-for (i in a){
+a <- 5:9
+for (i in 1:5){
   print(a[i]+1)
 }
 
 lapply(a, function(x) x+1)
 sapply(a, function(x) x+1)
+
 #purr에 있는 패키지 map
-map(a,function(x) x+1)
-map_dbl(a,function(x) x+1)
+map(a, function(x) x+1)
+map_dbl(a, function(x) x+1)
 
 add_one <-function(x) x+1
 
@@ -61,6 +64,7 @@ map_lgl(b, is.numeric)
 
 c<-c("abc", 'def', 'ghi')
 map_chr(c, ~paste0(.x,'z'))
+map(c, ~paste0(.x,'z'))
 
 #작업대상이 2개
 
@@ -70,7 +74,7 @@ map2_dbl(a,d,sum)
 
 #자료가 세 개 이상일 때
 pmap_dbl(list(a,b,d), ~..2-..1+..3)
-
+pmap_dbl(list(a,b), ~..2-..1)
 
 # 데이터를 반복적으로 골라낼 때 --------------------------------------------------------
 
@@ -85,14 +89,21 @@ map_dbl(e, 1)
 map_dbl(e, 2)
 map_dbl(e, 'x')
 
+map_dbl(e, 3) # error
 map_dbl(e, 'y') # error
 map(e, 'y')
+map(e, 3)
 
 map(e, list('y', 1))
 map_dbl(e, list('y', 1))
 
+
 map_chr(e, 'z') # error
-map_chr(e, 'z', .default = NA) # error
+map_chr(e, 'z', .default = NA) #.default
+
+map_dbl(e, 'z', .default = NA) # error
+map(e, 'z', .default = NA) 
+
 
 f <- tibble(a=c(17, 23, 4, 10, 11), 
             b=c(24, 5, 6, 12, 18), 
