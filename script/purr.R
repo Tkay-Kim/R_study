@@ -1,10 +1,10 @@
 
 # Introduction to "purr" --------------------------------------------------
-
+# 출처:https://kuduz.tistory.com/1199?category=834629
 install.packages("tidyverse")
 library("tidyverse")
 
-kbo <- read.csv("kbo.csv") %>% as_tibble()
+kbo <- read.csv("kbo.csv") %>% as_tibble() #한글자료는 read.csv로만 읽으면 깨짐현상이 나타나 as_tibble()해줘야한다.
 str(kbo)
 
 lm(타석당득점~타율, kbo) %>%
@@ -144,8 +144,106 @@ kbo %>%
 kbo2$data %>% 
   set_names(., kbo2$기록)
 
-kbo2$data %>% 
+kbo2$data %>%
+  set_names(., kbo2$기록) %>%
+  map_df(~lm(타석당득점~값, data=.) %>%
+           summary() %>%
+           .$r.squared)
+
+kbo %>% 
+  pivot_longer(cols=타율:OPS, names_to="기록", values_to = "값") %>% 
+  group_by(기록) %>% 
+  nest() %>% 
+  mutate(model = map(data, ~lm(타석당득점~값, data=.) %>% 
+    summary() %>% 
+    .$r.squared)) %>% 
+  unnest(model) %>% 
+  select(-data)
+
+kbo %>% 
+  pivot_longer(cols=타율:OPS, names_to = '기록', values_to ='값') %>% 
+  group_by(X10년대, 기록) %>% 
+  nest() %>% 
+  mutate(model=map(data, ~lm(타석당득점~값, data=.) %>% 
+                     summary() %>% 
+                     .$r.squared)) %>%
+  unnest(model) %>%
+  select(-data) %>% 
+  pivot_wider(names_from = 기록, values_from = model)
+
+#바로 그래프 그리기
+kbo %>% 
+  pivot_longer(cols=타율:OPS, names_to = '기록', values_to ='값') %>% 
+  group_by(X10년대, 기록) %>% 
+  nest() %>% 
+  mutate(model=map(data, ~lm(타석당득점~값, data=.) %>% 
+                     summary() %>% 
+                     .$r.squared)) %>%
+  unnest(model) %>%
+  select(-data) %>%
+  ggplot(aes(X10년대, model,fill =기록))+
+  geom_bar(stat='identity', position = position_dodge2(reverse= T))+
+  scale_fill_viridis_d()
 
 
+# 추가학습(방과후교실) -------------------------------------------------------------
+height <- read_csv('http://ncdrisc.org/downloads/height/NCD_RisC_eLife_2016_height_age18_countries.csv')
 
+class(height)
+str(height)
+height %>% head()
 
+height %>% 
+  map_df(~(tibble(class = class(.x),
+                  count = n_distinct(.x))),
+                  .id = 'variable')
+str(height)
+
+height %>% 
+  group_by(Country, Sex) %>% 
+  nest() %>% 
+  mutate(model = map_dbl(data, ~lm(`Mean height (cm)`~`Year of birth`, data=.) %>% 
+                           summary() %>% 
+                           .$r.squared))
+
+height_model <-function(x){
+  lm(`Mean height (cm)`~`Year of birth`, data=x) %>% 
+    summary() %>% 
+    .$r.squared
+}
+
+height %>% 
+  group_by(Country, Sex) %>% 
+  nest() %>% 
+  mutate(model=map_dbl(data,height_model)) %>% 
+  arrange(-model)
+
+height %>% 
+  filter(Country %in% c('North Korea', 'South Korea')&Sex == 'Men')%>% 
+  ggplot(aes(`Year of birth`, `Mean height (cm)`, color = Country))+
+  geom_line()
+
+install.packages('modelr')
+library(modelr)
+
+height_model2<-function(x){
+  df <-height %>% 
+    filter(Country==x&Sex == 'Men')
+  fit <-lm(`Mean height (cm)`~`Year of birth`, data = df)
+  df %>% 
+    add_predictions(fit) %>% 
+    select(Country,`Year of birth`, `Mean height (cm)`, pred)
+}
+
+map_df(c('South Korea', 'North Korea'), height_model2) %>% 
+  map_chr(n_distinct)
+
+map_df(c('South Korea', 'North Korea'), height_model2) %>%
+  ggplot(aes(`Year of birth`, `Mean height (cm)`, color=Country)) +
+  geom_line(lwd=1.5) +
+  geom_point(aes(y=pred), alpha=.5)
+
+map_df(c('South Korea', 'North Korea', 'Japan'), height_model2) %>%
+  ggplot(aes(`Year of birth`, `Mean height (cm)`, color=Country)) +
+  geom_line(lwd=1.5) +
+  geom_point(aes(y=pred), alpha=.5)
