@@ -105,7 +105,7 @@ map_dbl(e, 'z', .default = NA) # error
 map(e, 'z', .default = NA) 
 
 
-f <- tibble(a=c(17, 23, 4, 10, 11), 
+f <- tibble(a=c(17, 23, 4, 10, 10), 
             b=c(24, 5, 6, 12, 18), 
             c=c(1, 7, 13, 19, 25), 
             d=c(8, 14, 20, 21, 2), 
@@ -114,18 +114,19 @@ f
 f %>% mutate(sum = a+b+c+d+e)
 
 f %>% 
-  rowwise() %>% 
+  rowwise()%>% 
   mutate(max = max(a,b,c,d,e))
 
-map(f,sum)
+map(f, sum)
 map_df(f,sum)
-map_df(f, ~.x+1)
+map_dbl(f,sum)
 
+map(f, ~.x+1)
+map_df(f, ~.x+1)
 modify(f, ~.x+1) # 원래 자료형 그대로 출력
 
 
-
-# kbo ---------------------------------------------------------------------
+# 다시 kbo ---------------------------------------------------------------------
 #필요한 열만 추출
 kbo %>% 
   select(타율, 출루율, 장타력, OPS) %>% 
@@ -153,14 +154,15 @@ kbo %>%
   nest() ->kbo2
 
 kbo2$data %>% 
-  set_names(., kbo2$기록)
+  set_names(., kbo2$기록) # .은 뭘까?
 
 kbo2$data %>%
   set_names(., kbo2$기록) %>%
-  map_df(~lm(타석당득점~값, data=.) %>%
+  map_df(~lm(타석당득점~값, data=.) %>% # 여기도 .
            summary() %>%
            .$r.squared)
 
+#위에 했던 거 한 번에 가능하다.
 kbo %>% 
   pivot_longer(cols=타율:OPS, names_to="기록", values_to = "값") %>% 
   group_by(기록) %>% 
@@ -171,6 +173,8 @@ kbo %>%
   unnest(model) %>% 
   select(-data)
 
+
+# 년대추가
 kbo %>% 
   pivot_longer(cols=타율:OPS, names_to = '기록', values_to ='값') %>% 
   group_by(X10년대, 기록) %>% 

@@ -3,8 +3,10 @@
 install.packages("tidyverse")
 install.packages("caret")
 install.packages("mlbench")
+install.packages("e1071")
 library(tidyverse)
 library(caret)
+library(e1071)
 
 set.seed(1234)
 
@@ -15,15 +17,15 @@ Sonar<- Sonar %>% as_tibble()
 names(Sonar)
 str(Sonar)
 
-#createDataPartition(): ¹İÀÀº¯¼ö¿¡ ±â¹İÇÑ ÃşÈ­ÃßÃâ Áö¿ø
+#createDataPartition(): ë°˜ì‘ë³€ìˆ˜ì— ê¸°ë°˜í•œ ì¸µí™”ì¶”ì¶œ ì§€ì›
 table(Sonar$Class)
 
-#sampleÀ» ÀÌ¿ëÇÑ ¹«ÀÛÀ§ ÃßÃâ
+#sampleì„ ì´ìš©í•œ ë¬´ì‘ìœ„ ì¶”ì¶œ
 indexTrain <- sample(1:nrow(Sonar), round(nrow(Sonar) * .7))
 training <- Sonar[ indexTrain, ]
 testing  <- Sonar[-indexTrain, ]
 
-#ÃşÈ­ÃßÃâ
+#ì¸µí™”ì¶”ì¶œ
 indexTrain <-createDataPartition(Sonar$Class, p=.7, list = F)
 training <-Sonar[indexTrain,]
 test <-Sonar[-indexTrain,]
@@ -37,13 +39,13 @@ rf_fit
 
 predict(rf_fit, newdata = testing) %>% confusionMatrix(testing$Class)
 
-#Tuning parametersÀÇ ±×¸®µå Á¶Á¤ÇÏ±â
+#Tuning parametersì˜ ê·¸ë¦¬ë“œ ì¡°ì •í•˜ê¸°
 #customgrid
 customGrid <- expand.grid(mtry = 1:10)
 class(customGrid)
 rf_fit2 <-train(Class ~., data= training, method = "rf", trControl = fitControl, tuneGrid = customGrid)
 rf_fit2
-#random selection of tuning parameter combinations °£°İ µ¿ÀÏÇÏÁö ¾Ê°Ô È¿À²ÀûÀ¸·Î
+#random selection of tuning parameter combinations ê°„ê²© ë™ì¼í•˜ì§€ ì•Šê²Œ íš¨ìœ¨ì ìœ¼ë¡œ
 rda_fit <-train(Class~., data = training, method = "rda", trControl = fitControl)
 rda_fit
 
@@ -53,3 +55,19 @@ rda_fit3 <-train(Class~., data = training, method = "rda", trControl = fitContro
 rda_fit3
 
 #Parallel Processing
+install.packages("doParallel")
+library("doParallel")
+
+registerDoParallel(cores=1)
+getDoParWorkers()
+time <- system.time({
+  train(Class ~ ., data = training, method = "gbm", trControl = fitControl, verbose = F)
+})
+time
+
+registerDoParallel(cores=2)
+getDoParWorkers()
+time <- system.time({
+  train(Class ~ ., data = training, method = "gbm", trControl = fitControl, verbose = F)
+})
+time
