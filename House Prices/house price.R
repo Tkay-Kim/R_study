@@ -61,7 +61,7 @@ names(all)
 all$PoolQC
 all$PoolQC[is.na(all$PoolQC)] <-'None'
 #ordinal
-Qualities <-c('None' = 0, 'Po' = 1, 'Fa' = 2, 'Gd' = 4, 'Ex' = 5)
+Qualities <-c('None' = 0, 'Po' = 1, 'Fa' = 2, 'TA' = 3, 'Gd' = 4, 'Ex' = 5)
 
 all$PoolQC<-as.integer(revalue(all$PoolQC, Qualities)) # revalue
 table(all$PoolQC)
@@ -93,3 +93,48 @@ all$Alley <- as.factor(all$Alley)
 ggplot(all[!is.na(all$SalePrice),], aes(x=Alley, y=SalePrice)) +
   geom_bar(stat='summary', fun = "median", fill="darkgray")+
   scale_y_continuous(breaks= seq(0, 200000, by=50000), labels = comma)
+
+#Fence
+table(all$Fence, useNA = "ifany")
+
+all$Fence[is.na(all$Fence)]<-'None'
+table(all$Fence)
+
+all[!is.na(all$SalePrice),] %>% group_by(Fence) %>% summarise(median = median(SalePrice), counts = n())
+# 위 결과 ordianal한 결과가 아니므로 정수형이 아닌 factor로 변형한다.
+
+all$Fence<-as.factor(all$Fence)
+
+# Fireplace
+table(all$FireplaceQu, useNA = "ifany")
+table(all$Fireplaces, useNA = "ifany")
+all %>% filter(Fireplaces == 0, is.na(FireplaceQu)) %>% select(Fireplaces, FireplaceQu) %>% unique()
+all$FireplaceQu[is.na(all$FireplaceQu)] <- 'None'
+
+all$FireplaceQu<-as.integer(revalue(all$FireplaceQu, Qualities))
+
+#Lot
+table(all$LotFrontage, useNA = "ifany")
+
+ggplot(all[!is.na(all$LotFrontage),], aes(x=as.factor(Neighborhood), y=LotFrontage)) +
+  geom_bar(stat='summary', fun.y = "median", fill='blue') +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+all %>% group_by(Neighborhood) %>% summarise(me = median(LotFrontage, na.rm = T))
+all %>% group_by(Neighborhood) %>% mutate(LotFrontage = ifelse(is.na(LotFrontage), median(LotFrontage, na.rm = T), LotFrontage))->all
+table(all$LotFrontage, useNA = "ifany")
+
+table(all$LotShape)
+all$LotShape<-as.integer(revalue(all$LotShape, c('IR3'=0, 'IR2'=1, 'IR1'=2, 'Reg'=3)))
+table(all$LotShape)
+sum(table(all$LotShape))
+
+table(all$LotConfig)
+ggplot(all[!is.na(all$SalePrice),], aes(x=as.factor(LotConfig), y=SalePrice)) +
+  geom_bar(stat='summary', fun = "median", fill='blue')+
+  scale_y_continuous(breaks= seq(0, 800000, by=100000), labels = comma) +
+  geom_label(stat = "count", aes(label = ..count.., y = ..count..))
+all$LotConfig <- as.factor(all$LotConfig)
+table(all$LotConfig)
+
+all$garage

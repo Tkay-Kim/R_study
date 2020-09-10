@@ -1,9 +1,9 @@
 {
     "id": "71C898D6",
-    "path": "C:/Users/404/Desktop/House Prices/house price.R",
+    "path": "C:/Users/404/Desktop/github/R_study/House Prices/house price.R",
     "project_path": "house price.R",
     "type": "r_source",
-    "hash": "3722628170",
+    "hash": "3805762968",
     "contents": "",
     "dirty": false,
     "created": 1599623662875.0,
@@ -11,15 +11,15 @@
     "relative_order": 1,
     "properties": {
         "tempName": "Untitled1",
-        "cursorPosition": "95,0",
-        "scrollLine": "64"
+        "cursorPosition": "129,24",
+        "scrollLine": "112"
     },
     "folds": "",
-    "lastKnownWriteTime": 1599631408,
+    "lastKnownWriteTime": 1599720646,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1599631408,
+    "last_content_update": 1599720646454,
     "read_only": false,
     "read_only_alternatives": []
 }
