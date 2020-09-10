@@ -1,0 +1,95 @@
+library(knitr)
+library(ggplot2)
+library(plyr)
+library(dplyr)
+library(corrplot)
+library(caret)
+library(gridExtra)
+library(scales)
+library(Rmisc)
+library(ggrepel)
+library(randomForest)
+library(psych)
+library(xgboost)
+
+train <- read.csv("data/train.csv", stringsAsFactors = F)
+train <- read.csv("./data/train.csv", stringsAsFactors = F)
+train <- read.csv("../data/train.csv", stringsAsFactors = F) # 추측컨대, kaggle 노트북안에서 쓰는 명령어
+test <- read.csv("./data/test.csv", stringsAsFactors = F)
+str(train)
+dim(train)
+str(train[,c(1:10, 81)])
+test_labels <- test$Id
+test$Id <- NULL
+train$Id <- NULL
+
+test$SalePrice <- NA
+all <- rbind(train, test)
+dim(all)
+
+ggplot(data = all[!is.na(all$SalePrice),], aes(x=SalePrice)) +
+  geom_histogram(fill = "green", binwidth = 10000) +
+  scale_x_continuous(breaks = seq(0,800000, by=100000), labels = comma)
+
+summary(all$SalePrice)
+
+numericVars <- which(sapply(all, is.numeric))
+numericVarNames <- names(numericVars)
+cat('There are', length(numericVars), 'numeric variables')
+
+all_numVar <- all[, numericVars]
+cor_numVar <- cor(all_numVar, us = "pairwise.complete.obs")
+cor_sorted<- as.matrix(sort(cor_numVar[,'SalePrice'], decreasing = T))
+CorHigh <- names(which(apply(cor_sorted, 1, function(x) abs(x) > 0.5)))
+cor_numVar <- cor_numVar[CorHigh,CorHigh]
+corrplot.mixed(cor_numVar, tl.col = "black", tl.pos = "lt")
+
+ggplot(data=all[!is.na(all$SalePrice),], aes(x=factor(OverallQual), y=SalePrice))+
+  geom_boxplot(col='blue') + labs(x='Overall Quality') +
+  scale_y_continuous(breaks= seq(0, 800000, by=100000), labels = comma)
+
+ggplot(data=all[!is.na(all$SalePrice),], aes(x=GrLivArea, y=SalePrice))+
+  geom_point(col='blue') + geom_smooth(method = "lm", se=FALSE, color="black", aes(group=1)) +
+  scale_y_continuous(breaks= seq(0, 800000, by=100000), labels = comma) +
+  geom_text_repel(aes(label = ifelse(all$GrLivArea[!is.na(all$SalePrice)]>4500, rownames(all), '')))
+
+all[c(524, 1299), c('SalePrice', 'GrLivArea', 'OverallQual')]
+
+NAcol<- which(colSums(is.na(all)) > 0)
+all[NAcol] %>% sapply(is.na) %>% colSums() %>% sort(decreasing = T)
+names(all)
+all$PoolQC
+all$PoolQC[is.na(all$PoolQC)] <-'None'
+#ordinal
+Qualities <-c('None' = 0, 'Po' = 1, 'Fa' = 2, 'Gd' = 4, 'Ex' = 5)
+
+all$PoolQC<-as.integer(revalue(all$PoolQC, Qualities)) # revalue
+table(all$PoolQC)
+table(all$PoolArea)
+
+all[all$PoolArea>0 & all$PoolQC == 0, c('PoolArea', 'PoolQC', 'OverallQual')]
+# 풀퀄리티를 풀이 없다고 평가했는데 풀에어리어가 있으니까 전체 퀄에 기반하여 풀퀄리티 넣기!
+all$PoolQC[2421] <- 2
+all$PoolQC[2504] <- 3
+all$PoolQC[2600] <- 2
+
+table(all$MiscFeature)
+
+all$MiscFeature[is.na(all$MiscFeature)] <- 'None'
+all$MiscFeature<-as.factor(all$MiscFeature)
+
+ggplot(all[!is.na(all$SalePrice),], aes(x=MiscFeature, y=SalePrice)) +
+  geom_bar(stat='summary', fun = "median", fill='blue') +
+  scale_y_continuous(breaks= seq(0, 800000, by=100000), labels = comma) +
+  geom_label(stat = "count", aes(label = ..count.., y = ..count..))
+             
+table(all$MiscFeature)
+                      
+#Alley
+table(all$Alley,useNA = "ifany")
+all$Alley[is.na(all$Alley)] <- 'None'
+all$Alley <- as.factor(all$Alley)
+
+ggplot(all[!is.na(all$SalePrice),], aes(x=Alley, y=SalePrice)) +
+  geom_bar(stat='summary', fun = "median", fill="darkgray")+
+  scale_y_continuous(breaks= seq(0, 200000, by=50000), labels = comma)
